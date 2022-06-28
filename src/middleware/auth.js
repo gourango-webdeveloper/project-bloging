@@ -7,18 +7,23 @@ const mongoose = require("mongoose")
 const authenticate = function (req, res, next) {
     try {
         const token = req.headers["x-api-key"]
-        
+
         if (!token) {
-            res.status(404).send({ status: false, msg: "token must be present" })
+            res.status(400).send({ status: false, msg: "token must be present" })
         }
         else {
-            const validToken =jwt.decode(token)
-            if(validToken){
-                jwt.verify(token, "functionup-Project-1-Blogging-Room-18")
-                next()
+            const validToken = jwt.decode(token)
+            if (validToken) {
+                try {
+                    jwt.verify(token, "functionup-Project-1-Blogging-Room-18")
+                    next()
+                }
+                catch (error) {
+                    res.status(401).send({ status: false, msg: "Invalid token" })
+                }
             }
-            else{
-                res.status(403).send({ status: false, msg: "Invalid token" })
+            else {
+                res.status(400).send({ status: false, msg: "Invalid token" })
             }
         }
     }
@@ -32,12 +37,12 @@ const authenticate = function (req, res, next) {
 const authorise = async function (req, res, next) {
     try {
         const blogIdParams = req.params.blogId
-        if(!mongoose.Types.ObjectId.isValid(blogIdParams)){
+        if (!mongoose.Types.ObjectId.isValid(blogIdParams)) {
             return res.status(401).send("provide valid blogId")
         }
         const data = await blogModel.findById(blogIdParams).select({ authorId: 1, _id: 0 })
-        if(!data){
-            return res.status(401).send("provide valid blogId")
+        if (!data) {
+            return res.status(400).send("provide valid blogId")
         }
         const token = req.headers["x-api-key"]
         const decodedToken = jwt.verify(token, "functionup-Project-1-Blogging-Room-18")
@@ -45,7 +50,7 @@ const authorise = async function (req, res, next) {
             next()
         }
         else {
-            res.status(401).send("Authorization failed")
+            res.status(403).send("Authorization failed")
         }
     }
     catch (error) {
